@@ -1,30 +1,58 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Weather Forecast App</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weather Forecast App</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <div id="app">
-        <div class="header">
-            <h1>Weather Forecast</h1>
-        </div>
-        <div class="input-section">
-            <input type="text" id="cityInput" placeholder="Enter city name">
-            <button onclick="getWeather()">Get Weather</button>
-            <button onclick="getWeatherByLocation()">Use My Location</button>
-        </div>
-        <div class="spinner" id="spinner">
-            <div class="spinner-circle"></div>
-            Loading...
-        </div>
-        <div id="weather"></div>
-        <div id="forecast"></div>
-        <div id="alerts"></div>
+  <div id="app">
+    <div class="header">
+      <h1 class="app-title">Weather Forecast</h1>
+      <button class="theme-toggle" id="themeToggle">
+        <i class="fas fa-moon"></i>
+      </button>
     </div>
-    <script src="js/script.js"></script>
+
+    <div class="input-section">
+      <div class="search-container">
+        <input type="text" id="cityInput" placeholder="Enter city name">
+        <button class="search-btn" onclick="getWeather()">
+          <i class="fas fa-search"></i> Search
+        </button>
+      </div>
+      <button class="location-btn secondary" onclick="getWeatherByLocation()">
+        <i class="fas fa-location-arrow"></i> My Location
+      </button>
+    </div>
+
+    <div class="unit-toggle">
+      <button id="celsiusBtn" class="active" onclick="setTemperatureUnit('celsius')">°C</button>
+      <button id="fahrenheitBtn" onclick="setTemperatureUnit('fahrenheit')">°F</button>
+    </div>
+
+    <div id="favorites" style="display: none;">
+      <h3>Favorite Locations</h3>
+      <div class="favorites-list" id="favoritesList"></div>
+    </div>
+
+    <div class="spinner" id="spinner">
+      <div class="spinner-circle"></div>
+      <p>Loading weather data...</p>
+    </div>
+
+    <div id="weather"></div>
+    <div id="forecast"></div>
+    <div id="alerts"></div>
+
+    <button id="addFavoriteBtn" class="secondary" style="margin-top: 20px; display: none;" onclick="addToFavorites()">
+      <i class="fas fa-star"></i> Add to Favorites
+    </button>
+  </div>
+
+  <script src="js/script.js"></script>
 </body>
 </html>
