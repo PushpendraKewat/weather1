@@ -6,32 +6,38 @@
   <title>Weather Forecast App</title>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <div id="app">
+  <div id="app" role="main">
     <div class="header">
       <h1 class="app-title">Weather Forecast</h1>
-      <button class="theme-toggle" id="themeToggle">
+      <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark/light mode">
         <i class="fas fa-moon"></i>
       </button>
     </div>
 
     <div class="input-section">
       <div class="search-container">
-        <input type="text" id="cityInput" placeholder="Enter city name">
-        <button class="search-btn" onclick="getWeather()">
+        <input type="text" id="cityInput" placeholder="Enter city name" aria-label="City name">
+        <button class="search-btn" onclick="getWeather()" aria-label="Search">
           <i class="fas fa-search"></i> Search
         </button>
       </div>
-      <button class="location-btn secondary" onclick="getWeatherByLocation()">
+      <button class="location-btn secondary" onclick="getWeatherByLocation()" aria-label="Use my location">
         <i class="fas fa-location-arrow"></i> My Location
       </button>
     </div>
 
+    <div class="recent-searches" id="recentSearches" style="display: none;">
+      <h3>Recent Searches</h3>
+      <div class="recent-list" id="recentList"></div>
+    </div>
+
     <div class="unit-toggle">
-      <button id="celsiusBtn" class="active" onclick="setTemperatureUnit('celsius')">°C</button>
-      <button id="fahrenheitBtn" onclick="setTemperatureUnit('fahrenheit')">°F</button>
+      <button id="celsiusBtn" class="active" onclick="setTemperatureUnit('celsius')" aria-label="Use Celsius">°C</button>
+      <button id="fahrenheitBtn" onclick="setTemperatureUnit('fahrenheit')" aria-label="Use Fahrenheit">°F</button>
     </div>
 
     <div id="favorites" style="display: none;">
@@ -40,19 +46,35 @@
     </div>
 
     <div class="spinner" id="spinner">
-      <div class="spinner-circle"></div>
+      <div class="spinner-circle" aria-hidden="true"></div>
       <p>Loading weather data...</p>
     </div>
 
+    <div id="notification" class="notification" style="display: none;"></div>
+
     <div id="weather"></div>
+    <div id="hourly-forecast" style="display: none;"></div>
     <div id="forecast"></div>
     <div id="alerts"></div>
+    <div id="map-container" style="display: none;">
+      <h3>Location Map</h3>
+      <div id="map" style="height: 300px;"></div>
+    </div>
 
-    <button id="addFavoriteBtn" class="secondary" style="margin-top: 20px; display: none;" onclick="addToFavorites()">
-      <i class="fas fa-star"></i> Add to Favorites
-    </button>
+    <div class="action-buttons">
+      <button id="addFavoriteBtn" class="secondary" style="display: none;" onclick="addToFavorites()" aria-label="Add to favorites">
+        <i class="fas fa-star"></i> Add to Favorites
+      </button>
+      <button id="showMapBtn" class="secondary" style="display: none;" onclick="toggleMap()" aria-label="Show map">
+        <i class="fas fa-map"></i> Show Map
+      </button>
+      <button id="showHourlyBtn" class="secondary" style="display: none;" onclick="toggleHourlyForecast()" aria-label="Show hourly forecast">
+        <i class="fas fa-clock"></i> Hourly Forecast
+      </button>
+    </div>
   </div>
 
+  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
   <script src="js/script.js"></script>
 </body>
 </html>

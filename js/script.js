@@ -1,12 +1,16 @@
-// Weather App with all features
-const apiKey = "8cb180073321f663b875890301b3ed58"; // Replace with your actual API key
+// Weather App with enhanced features
+const apiKey = "8cb180073321f663b875890301b3ed58";
 
 // App State
 let appState = {
   currentUnit: 'celsius',
   currentWeather: null,
   favorites: JSON.parse(localStorage.getItem('weatherFavorites')) || [],
-  theme: localStorage.getItem('weatherTheme') || 'dark'
+  recentSearches: JSON.parse(localStorage.getItem('weatherRecentSearches')) || [],
+  theme: localStorage.getItem('weatherTheme') || 'dark',
+  map: null,
+  mapVisible: false,
+  hourlyForecastVisible: false
 };
 
 // DOM Elements
@@ -14,6 +18,7 @@ const elements = {
   cityInput: document.getElementById('cityInput'),
   weatherContainer: document.getElementById('weather'),
   forecastContainer: document.getElementById('forecast'),
+  hourlyForecastContainer: document.getElementById('hourly-forecast'),
   alertsContainer: document.getElementById('alerts'),
   spinner: document.getElementById('spinner'),
   themeToggle: document.getElementById('themeToggle'),
@@ -21,37 +26,47 @@ const elements = {
   fahrenheitBtn: document.getElementById('fahrenheitBtn'),
   favoritesContainer: document.getElementById('favorites'),
   favoritesList: document.getElementById('favoritesList'),
-  addFavoriteBtn: document.getElementById('addFavoriteBtn')
+  addFavoriteBtn: document.getElementById('addFavoriteBtn'),
+  showMapBtn: document.getElementById('showMapBtn'),
+  showHourlyBtn: document.getElementById('showHourlyBtn'),
+  mapContainer: document.getElementById('map-container'),
+  map: document.getElementById('map'),
+  notification: document.getElementById('notification'),
+  recentSearchesContainer: document.getElementById('recentSearches'),
+  recentList: document.getElementById('recentList')
 };
 
 // Initialize the app
 function initApp() {
-  // Set theme
   setTheme(appState.theme);
-  
-  // Load favorites
   renderFavorites();
+  renderRecentSearches();
   
-  // Set default city or use geolocation
   if (appState.favorites.length > 0) {
     elements.favoritesContainer.style.display = 'block';
-    // Load first favorite by default
     getWeather(appState.favorites[0].name);
+  } else if (appState.recentSearches.length > 0) {
+    getWeather(appState.recentSearches[0].name);
   } else {
-    // Try geolocation if no favorites
     getWeatherByLocation();
   }
 }
 
+// Notification system
+function showNotification(message, type = 'error', duration = 3000) {
+  elements.notification.textContent = message;
+  elements.notification.className = `notification ${type}`;
+  elements.notification.style.display = 'block';
+  
+  setTimeout(() => {
+    elements.notification.style.display = 'none';
+  }, duration);
+}
+
 // Theme Functions
 function setTheme(theme) {
-  if (theme === 'light') {
-    document.body.classList.add('light-mode');
-    elements.themeToggle.innerHTML = '<i class="fas fa-moon"></i>';
-  } else {
-    document.body.classList.remove('light-mode');
-    elements.themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
-  }
+  document.body.classList.toggle('light-mode', theme === 'light');
+  elements.themeToggle.innerHTML = theme === 'light' ? '<i class="fas fa-moon"></i>' : '<i class="fas fa-sun"></i>';
   appState.theme = theme;
   localStorage.setItem('weatherTheme', theme);
 }
@@ -59,32 +74,26 @@ function setTheme(theme) {
 // Temperature Unit Functions
 function setTemperatureUnit(unit) {
   appState.currentUnit = unit;
-  if (unit === 'celsius') {
-    elements.celsiusBtn.classList.add('active');
-    elements.fahrenheitBtn.classList.remove('active');
-  } else {
-    elements.celsiusBtn.classList.remove('active');
-    elements.fahrenheitBtn.classList.add('active');
-  }
+  elements.celsiusBtn.classList.toggle('active', unit === 'celsius');
+  elements.fahrenheitBtn.classList.toggle('active', unit === 'fahrenheit');
   
-  // Update displayed temperatures if weather data exists
   if (appState.currentWeather) {
     displayWeather(appState.currentWeather);
+    if (appState.currentWeather.oneCall?.hourly) {
+      displayHourlyForecast(appState.currentWeather.oneCall.hourly);
+    }
   }
 }
 
 function convertTemp(temp) {
-  if (appState.currentUnit === 'fahrenheit') {
-    return (temp * 9/5) + 32;
-  }
-  return temp;
+  return appState.currentUnit === 'fahrenheit' ? (temp * 9/5) + 32 : temp;
 }
 
 // Weather Data Functions
 async function getWeather(cityName) {
   const city = cityName || elements.cityInput.value.trim();
   if (!city) {
-    showAlert('Please enter a city name');
+    showNotification('Please enter a city name');
     return;
   }
 
@@ -92,7 +101,6 @@ async function getWeather(cityName) {
   clearWeatherData();
 
   try {
-    // Get coordinates first
     const geoUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${city}&limit=1&appid=${apiKey}`;
     const geoRes = await fetch(geoUrl);
     
@@ -104,11 +112,10 @@ async function getWeather(cityName) {
     const { lat, lon, name, country } = geoData[0];
     await fetchWeatherData(lat, lon, name, country);
     
-    // Show add to favorites button if not already a favorite
     const isFavorite = appState.favorites.some(fav => fav.name.toLowerCase() === name.toLowerCase());
     elements.addFavoriteBtn.style.display = isFavorite ? 'none' : 'block';
   } catch (error) {
-    showAlert(error.message);
+    showNotification(error.message);
     console.error('Error fetching weather:', error);
   } finally {
     showLoading(false);
@@ -117,7 +124,7 @@ async function getWeather(cityName) {
 
 async function getWeatherByLocation() {
   if (!navigator.geolocation) {
-    showAlert('Geolocation is not supported by your browser');
+    showNotification('Geolocation is not supported by your browser');
     return;
   }
 
@@ -131,10 +138,9 @@ async function getWeatherByLocation() {
     
     const { latitude: lat, longitude: lon } = position.coords;
     await fetchWeatherData(lat, lon);
-    
     elements.addFavoriteBtn.style.display = 'block';
   } catch (error) {
-    showAlert(`Error getting location: ${error.message}`);
+    showNotification(`Error getting location: ${error.message}`);
     console.error('Geolocation error:', error);
   } finally {
     showLoading(false);
@@ -146,7 +152,7 @@ async function fetchWeatherData(lat, lon, cityName, countryCode) {
     const currentUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
     const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
     const airUrl = `https://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${apiKey}`;
-    const oneCallUrl = `https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${lon}&exclude=minutely,hourly&appid=${apiKey}&units=metric`;
+    const oneCallUrl = `https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${lon}&exclude=minutely&appid=${apiKey}&units=metric`;
 
     const [currentRes, forecastRes, airRes, oneCallRes] = await Promise.all([
       fetch(currentUrl),
@@ -163,7 +169,6 @@ async function fetchWeatherData(lat, lon, cityName, countryCode) {
     const airData = airRes.ok ? await airRes.json() : null;
     const oneCallData = oneCallRes.ok ? await oneCallRes.json() : null;
 
-    // Combine all data
     const weatherData = {
       current: currentData,
       forecast: forecastData,
@@ -180,6 +185,16 @@ async function fetchWeatherData(lat, lon, cityName, countryCode) {
     appState.currentWeather = weatherData;
     displayWeather(weatherData);
     setWeatherBackground(currentData.weather[0].main);
+    
+    initMap(lat, lon);
+    elements.showMapBtn.style.display = 'block';
+    elements.showHourlyBtn.style.display = 'block';
+    
+    addToRecentSearches(weatherData.location.name, weatherData.location.country);
+    
+    if (oneCallData?.hourly) {
+      displayHourlyForecast(oneCallData.hourly);
+    }
   } catch (error) {
     throw error;
   }
@@ -187,8 +202,6 @@ async function fetchWeatherData(lat, lon, cityName, countryCode) {
 
 function displayWeather(weatherData) {
   const { current, forecast, airQuality, oneCall, location } = weatherData;
-  
-  // Current Weather
   const currentTemp = convertTemp(current.main.temp);
   const feelsLikeTemp = convertTemp(current.main.feels_like);
   const tempUnit = appState.currentUnit === 'celsius' ? '°C' : '°F';
@@ -262,7 +275,7 @@ function displayWeather(weatherData) {
 
   let forecastHTML = '';
   Object.entries(dailyForecast).forEach(([date, data], index) => {
-    if (index >= 5) return; // Limit to 5 days
+    if (index >= 5) return;
     
     const avgTemp = convertTemp(data.temps.reduce((a, b) => a + b, 0) / data.temps.length);
     const mainCondition = getMostFrequent(data.conditions);
@@ -285,7 +298,7 @@ function displayWeather(weatherData) {
 
   // Alerts
   let alertHTML = '<h3>Weather Alerts</h3>';
-  if (oneCall && oneCall.alerts && oneCall.alerts.length > 0) {
+  if (oneCall?.alerts?.length > 0) {
     oneCall.alerts.forEach(alert => {
       alertHTML += `
         <div class="alert-box">
@@ -301,6 +314,97 @@ function displayWeather(weatherData) {
     alertHTML += '<p>No current weather alerts 🎉</p>';
   }
   elements.alertsContainer.innerHTML = alertHTML;
+}
+
+// Recent searches functions
+function addToRecentSearches(cityName, countryCode) {
+  const existingIndex = appState.recentSearches.findIndex(
+    item => item.name.toLowerCase() === cityName.toLowerCase()
+  );
+  
+  if (existingIndex >= 0) {
+    const existingItem = appState.recentSearches.splice(existingIndex, 1)[0];
+    appState.recentSearches.unshift(existingItem);
+  } else {
+    appState.recentSearches.unshift({ name: cityName, country: countryCode });
+    if (appState.recentSearches.length > 5) {
+      appState.recentSearches.pop();
+    }
+  }
+  
+  localStorage.setItem('weatherRecentSearches', JSON.stringify(appState.recentSearches));
+  renderRecentSearches();
+}
+
+function renderRecentSearches() {
+  if (appState.recentSearches.length === 0) {
+    elements.recentSearchesContainer.style.display = 'none';
+    return;
+  }
+
+  elements.recentSearchesContainer.style.display = 'block';
+  elements.recentList.innerHTML = appState.recentSearches.map(item => `
+    <div class="recent-item" onclick="getWeather('${item.name}')" tabindex="0" role="button">
+      ${item.name}${item.country ? `, ${item.country}` : ''}
+    </div>
+  `).join('');
+}
+
+// Map functions
+function initMap(lat, lon) {
+  if (!appState.map) {
+    appState.map = L.map(elements.map).setView([lat, lon], 10);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(appState.map);
+  } else {
+    appState.map.setView([lat, lon], 10);
+  }
+  
+  if (appState.map.marker) {
+    appState.map.removeLayer(appState.map.marker);
+  }
+  appState.map.marker = L.marker([lat, lon]).addTo(appState.map);
+}
+
+function toggleMap() {
+  appState.mapVisible = !appState.mapVisible;
+  elements.mapContainer.style.display = appState.mapVisible ? 'block' : 'none';
+  elements.showMapBtn.innerHTML = appState.mapVisible ? 
+    '<i class="fas fa-map"></i> Hide Map' : 
+    '<i class="fas fa-map"></i> Show Map';
+}
+
+// Hourly forecast functions
+function displayHourlyForecast(hourlyData) {
+  const tempUnit = appState.currentUnit === 'celsius' ? '°C' : '°F';
+  let hourlyHTML = '<h3>24-Hour Forecast</h3><div class="hourly-container">';
+  
+  hourlyData.slice(0, 24).forEach(hour => {
+    const time = new Date(hour.dt * 1000).toLocaleTimeString([], { hour: '2-digit' });
+    const temp = Math.round(convertTemp(hour.temp));
+    const icon = getWeatherIcon(hour.weather[0].id);
+    
+    hourlyHTML += `
+      <div class="hourly-item">
+        <div class="hourly-time">${time}</div>
+        <div class="hourly-icon">${icon}</div>
+        <div class="hourly-temp">${temp}${tempUnit}</div>
+        <div class="hourly-pop">${Math.round(hour.pop * 100)}%</div>
+      </div>
+    `;
+  });
+  
+  hourlyHTML += '</div>';
+  elements.hourlyForecastContainer.innerHTML = hourlyHTML;
+}
+
+function toggleHourlyForecast() {
+  appState.hourlyForecastVisible = !appState.hourlyForecastVisible;
+  elements.hourlyForecastContainer.style.display = appState.hourlyForecastVisible ? 'block' : 'none';
+  elements.showHourlyBtn.innerHTML = appState.hourlyForecastVisible ? 
+    '<i class="fas fa-clock"></i> Hide Hourly' : 
+    '<i class="fas fa-clock"></i> Hourly Forecast';
 }
 
 // Favorites Functions
@@ -327,7 +431,7 @@ function addToFavorites() {
   );
 
   if (isAlreadyFavorite) {
-    showAlert('This location is already in your favorites');
+    showNotification('This location is already in your favorites');
     return;
   }
 
@@ -341,7 +445,7 @@ function addToFavorites() {
   localStorage.setItem('weatherFavorites', JSON.stringify(appState.favorites));
   renderFavorites();
   elements.addFavoriteBtn.style.display = 'none';
-  showAlert('Location added to favorites!', 'success');
+  showNotification('Location added to favorites!', 'success');
 }
 
 // UI Helper Functions
@@ -353,12 +457,14 @@ function clearWeatherData() {
   elements.weatherContainer.innerHTML = '';
   elements.forecastContainer.innerHTML = '';
   elements.alertsContainer.innerHTML = '';
+  elements.hourlyForecastContainer.innerHTML = '';
+  elements.hourlyForecastContainer.style.display = 'none';
+  elements.mapContainer.style.display = 'none';
   elements.addFavoriteBtn.style.display = 'none';
-}
-
-function showAlert(message, type = 'error') {
-  alert(message); // Simple alert for now - could be replaced with a nicer UI element
-  console[type](message);
+  elements.showMapBtn.style.display = 'none';
+  elements.showHourlyBtn.style.display = 'none';
+  appState.hourlyForecastVisible = false;
+  appState.mapVisible = false;
 }
 
 // Weather Helper Functions
@@ -383,7 +489,6 @@ function setWeatherBackground(condition) {
   else if (lowerCondition.includes('thunder')) imageUrl = backgrounds.thunderstorm;
   else if (lowerCondition.includes('mist') || lowerCondition.includes('fog')) imageUrl = backgrounds.mist;
 
-  // Preload image
   const img = new Image();
   img.src = imageUrl;
   img.onload = () => {
@@ -425,15 +530,14 @@ function getWeatherIcon(conditionCode) {
     return '🌈';
   }
 
-  // Numeric condition codes from OpenWeatherMap
-  if (conditionCode >= 200 && conditionCode < 300) return '⛈️'; // Thunderstorm
-  if (conditionCode >= 300 && conditionCode < 400) return '🌧️'; // Drizzle
-  if (conditionCode >= 500 && conditionCode < 600) return '🌧️'; // Rain
-  if (conditionCode >= 600 && conditionCode < 700) return '❄️'; // Snow
-  if (conditionCode >= 700 && conditionCode < 800) return '🌫️'; // Atmosphere (mist, fog, etc.)
-  if (conditionCode === 800) return '☀️'; // Clear
-  if (conditionCode > 800) return '☁️'; // Clouds
-  return '🌈'; // Default
+  if (conditionCode >= 200 && conditionCode < 300) return '⛈️';
+  if (conditionCode >= 300 && conditionCode < 400) return '🌧️';
+  if (conditionCode >= 500 && conditionCode < 600) return '🌧️';
+  if (conditionCode >= 600 && conditionCode < 700) return '❄️';
+  if (conditionCode >= 700 && conditionCode < 800) return '🌫️';
+  if (conditionCode === 800) return '☀️';
+  if (conditionCode > 800) return '☁️';
+  return '🌈';
 }
 
 function getMostFrequent(arr) {
@@ -456,6 +560,16 @@ elements.cityInput.addEventListener('keypress', (e) => {
   if (e.key === 'Enter') {
     getWeather();
   }
+});
+
+elements.cityInput.addEventListener('focus', () => {
+  elements.recentSearchesContainer.style.display = appState.recentSearches.length > 0 ? 'block' : 'none';
+});
+
+elements.cityInput.addEventListener('blur', () => {
+  setTimeout(() => {
+    elements.recentSearchesContainer.style.display = 'none';
+  }, 200);
 });
 
 // Initialize the app
