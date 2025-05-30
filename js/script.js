@@ -135,17 +135,38 @@ async function getWeatherByLocation() {
     const position = await new Promise((resolve, reject) => {
       navigator.geolocation.getCurrentPosition(resolve, reject);
     });
-    
+
     const { latitude: lat, longitude: lon } = position.coords;
-    await fetchWeatherData(lat, lon);
+
+    // Use Nominatim for better city name accuracy
+    const nominatimUrl = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=10&addressdetails=1`;
+
+    const res = await fetch(nominatimUrl, {
+      headers: {
+        'User-Agent': 'weather-app-demo'
+      }
+    });
+
+    if (!res.ok) throw new Error('Failed to reverse geocode location');
+
+    const data = await res.json();
+    const address = data.address;
+
+    const name = address.city || address.town || address.village || address.county || 'Unknown';
+    const country = address.country_code?.toUpperCase() || 'US';
+
+    await fetchWeatherData(lat, lon, name, country);
+
     elements.addFavoriteBtn.style.display = 'block';
   } catch (error) {
-    showNotification(`Error getting location: ${error.message}`);
-    console.error('Geolocation error:', error);
+    showNotification(`Location error: ${error.message}`);
+    console.error('Geolocation reverse error:', error);
   } finally {
     showLoading(false);
   }
 }
+
+
 
 async function fetchWeatherData(lat, lon, cityName, countryCode) {
   try {
@@ -352,28 +373,45 @@ function renderRecentSearches() {
 
 // Map functions
 function initMap(lat, lon) {
+  // Ensure map container is visible before initializing
+  elements.mapContainer.style.display = 'block';
+
   if (!appState.map) {
     appState.map = L.map(elements.map).setView([lat, lon], 10);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      attribution: '&copy; OpenStreetMap contributors'
     }).addTo(appState.map);
   } else {
     appState.map.setView([lat, lon], 10);
   }
-  
+
   if (appState.map.marker) {
     appState.map.removeLayer(appState.map.marker);
   }
   appState.map.marker = L.marker([lat, lon]).addTo(appState.map);
+
+  // Fix map dimensions when shown
+  setTimeout(() => {
+    appState.map.invalidateSize();
+  }, 200);
 }
+
 
 function toggleMap() {
   appState.mapVisible = !appState.mapVisible;
   elements.mapContainer.style.display = appState.mapVisible ? 'block' : 'none';
-  elements.showMapBtn.innerHTML = appState.mapVisible ? 
-    '<i class="fas fa-map"></i> Hide Map' : 
-    '<i class="fas fa-map"></i> Show Map';
+  elements.showMapBtn.innerHTML = appState.mapVisible
+    ? '<i class="fas fa-map"></i> Hide Map'
+    : '<i class="fas fa-map"></i> Show Map';
+
+  // Ensure the map resizes properly when made visible
+  if (appState.mapVisible && appState.map) {
+    setTimeout(() => {
+      appState.map.invalidateSize();
+    }, 200);
+  }
 }
+
 
 // Hourly forecast functions
 function displayHourlyForecast(hourlyData) {
