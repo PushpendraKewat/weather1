@@ -1,5 +1,5 @@
 // Weather App with enhanced features
-const apiKey = "8cb180073321f663b875890301b3ed58";
+const apiKey = "e051d92b993a29737de82e7704400596";
 
 // App State
 let appState = {
