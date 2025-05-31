@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sign Up</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #ff758c, #ff7eb3);
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .signup-box {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(12px);
+      border-radius: 20px;
+      padding: 40px;
+      width: 340px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+      color: white;
+      text-align: center;
+    }
+    .signup-box h2 {
+      margin-bottom: 25px;
+      font-size: 24px;
+      font-weight: 600;
+    }
+    .signup-box input {
+      width: 100%;
+      padding: 12px;
+      margin: 12px 0;
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 14px;
+      outline: none;
+    }
+    .password-wrapper {
+      position: relative;
+    }
+    .password-wrapper input {
+      width: 100%;
+      padding-right: 40px;
+    }
+    .toggle-password {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      font-size: 18px;
+      color: white;
+    }
+    .signup-box button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 16px;
+      background-color: #ffffff;
+      border: none;
+      color: #333;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    .signup-box button:hover {
+      background-color: #e0e0e0;
+    }
+    .signup-box a {
+      color: #ffffff;
+      text-decoration: none;
+      display: block;
+      margin-top: 20px;
+      font-size: 14px;
+    }
+    .signup-box a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="signup-box">
+    <h2>Create Account</h2>
+    <input type="email" id="email" placeholder="Email" />
+    <div class="password-wrapper">
+      <input type="password" id="password" placeholder="Password">
+      <span class="toggle-password" onclick="togglePassword()">👁️</span>
+    </div>
+    <button onclick="register()">Sign Up</button>
+    <a href="index.html">Already have an account? Log In</a>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyD1SmQ_S0sHU1pT_mzdGAUGzLdv8I5p-Zs",
+      authDomain: "weatherapp-53b98.firebaseapp.com",
+      projectId: "weatherapp-53b98",
+      appId: "1:111983595600:web:5590b05eab93f286934155"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    window.register = function () {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      createUserWithEmailAndPassword(auth, email, password)
+        .then(() => window.location.href = "weather.html")
+        .catch((error) => alert(error.message));
+    }
+
+    window.togglePassword = function () {
+      const input = document.getElementById("password");
+      input.type = input.type === "password" ? "text" : "password";
+    }
+  </script>
+</body>
+</html>

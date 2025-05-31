@@ -12,11 +12,17 @@
 <body>
   <div id="app" role="main">
     <div class="header">
-      <h1 class="app-title">Weather Forecast</h1>
-      <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark/light mode">
-        <i class="fas fa-moon"></i>
-      </button>
-    </div>
+  <h1 class="app-title">Weather Forecast</h1>
+  <div>
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark/light mode">
+      <i class="fas fa-moon"></i>
+    </button>
+    <button class="logout-btn secondary" onclick="logout()" aria-label="Log out">
+      <i class="fas fa-sign-out-alt"></i> Logout
+    </button>
+  </div>
+</div>
+
 
     <div class="input-section">
       <div class="search-container">
@@ -75,6 +81,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-  <script src="js/script.js"></script>
+  <script type="module" src="js/script.js"></script>
 </body>
 </html>

@@ -1,85 +1,22 @@
-// Initialize Firebase
-const firebaseConfig = {
-  apiKey: "AIzaSyD1SmQ_S0sHU1pT_mzdGAUGzLdv8I5p-Zs",
-  authDomain: "weatherapp-53b98.firebaseapp.com",
-  projectId: "weatherapp-53b98",
-  storageBucket: "weatherapp-53b98.firebasestorage.app",
-  messagingSenderId: "111983595600",
-  appId: "1:111983595600:web:7dcc144b9e8e5055934155",
-  measurementId: "G-QS6VTEPQ3G"
-};
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-analytics.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
 
-firebase.initializeApp(firebaseConfig);
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyD1SmQ_S0sHU1pT_mzdGAUGzLdv8I5p-Zs",
+    authDomain: "weatherapp-53b98.firebaseapp.com",
+    databaseURL: "https://weatherapp-53b98-default-rtdb.firebaseio.com",
+    projectId: "weatherapp-53b98",
+    storageBucket: "weatherapp-53b98.firebasestorage.app",
+    messagingSenderId: "111983595600",
+    appId: "1:111983595600:web:5590b05eab93f286934155",
+    measurementId: "G-9LMS3KCDB3"
+  };
 
-let currentUser = null;
-
-function login() {
-  const email = document.getElementById('email').value;
-  const password = document.getElementById('password').value;
-  document.getElementById('authSpinner').style.display = 'block';
-
-  firebase.auth().signInWithEmailAndPassword(email, password)
-    .then(userCredential => {
-      currentUser = userCredential.user;
-      document.getElementById('authContainer').style.display = 'none';
-      document.getElementById('app').style.display = 'block';
-      document.getElementById('logoutBtn').style.display = 'inline-block';
-      initApp();
-    })
-    .catch(error => {
-      showNotification(error.message, 'error');
-    })
-    .finally(() => {
-      document.getElementById('authSpinner').style.display = 'none';
-    });
-}
-
-function signup() {
-  const email = document.getElementById('email').value;
-  const password = document.getElementById('password').value;
-  document.getElementById('authSpinner').style.display = 'block';
-
-  firebase.auth().createUserWithEmailAndPassword(email, password)
-    .then(userCredential => {
-      currentUser = userCredential.user;
-      document.getElementById('authContainer').style.display = 'none';
-      document.getElementById('app').style.display = 'block';
-      document.getElementById('logoutBtn').style.display = 'inline-block';
-      initApp();
-    })
-    .catch(error => {
-      showNotification(error.message, 'error');
-    })
-    .finally(() => {
-      document.getElementById('authSpinner').style.display = 'none';
-    });
-}
-
-function googleSignIn() {
-  const provider = new firebase.auth.GoogleAuthProvider();
-  document.getElementById('authSpinner').style.display = 'block';
-
-  firebase.auth().signInWithPopup(provider)
-    .then(result => {
-      currentUser = result.user;
-      document.getElementById('authContainer').style.display = 'none';
-      document.getElementById('app').style.display = 'block';
-      document.getElementById('logoutBtn').style.display = 'inline-block';
-      initApp();
-    })
-    .catch(error => {
-      showNotification(error.message, 'error');
-    })
-    .finally(() => {
-      document.getElementById('authSpinner').style.display = 'none';
-    });
-}
-
-function logout() {
-  firebase.auth().signOut().then(() => {
-    currentUser = null;
-    document.getElementById('app').style.display = 'none';
-    document.getElementById('authContainer').style.display = 'block';
-    document.getElementById('logoutBtn').style.display = 'none';
-  });
-}
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);

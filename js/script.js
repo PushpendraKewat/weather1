@@ -1,3 +1,30 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyD1SmQ_S0sHU1pT_mzdGAUGzLdv8I5p-Zs",
+  authDomain: "weatherapp-53b98.firebaseapp.com",
+  projectId: "weatherapp-53b98",
+  appId: "1:111983595600:web:5590b05eab93f286934155"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+onAuthStateChanged(auth, (user) => {
+  if (!user) {
+    window.location.href = "index.html";
+  }
+});
+
+window.logout = function () {
+  signOut(auth)
+    .then(() => window.location.href = "index.html")
+    .catch((error) => alert("Logout failed: " + error.message));
+};
+
+
+
 // Weather App with enhanced features
 const apiKey = "e051d92b993a29737de82e7704400596";
 
@@ -612,3 +639,10 @@ elements.cityInput.addEventListener('blur', () => {
 
 // Initialize the app
 document.addEventListener('DOMContentLoaded', initApp);
+// Expose key functions to global scope for HTML onclick compatibility
+window.getWeather = getWeather;
+window.setTemperatureUnit = setTemperatureUnit;
+window.getWeatherByLocation = getWeatherByLocation;
+window.addToFavorites = addToFavorites;
+window.toggleMap = toggleMap;
+window.toggleHourlyForecast = toggleHourlyForecast;
